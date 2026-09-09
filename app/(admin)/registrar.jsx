@@ -1,15 +1,22 @@
-import { useCallback } from 'react';
-import { useRouter, useFocusEffect } from 'expo-router';
+import React, { useEffect } from 'react';
+import { View, ActivityIndicator } from 'react-native';
+import { useRouter } from 'expo-router';
 
 export default function RegistrarRedirectAdmin() {
   const router = useRouter();
 
-  useFocusEffect(
-    useCallback(() => {
+  useEffect(() => {
+    const timer = setTimeout(() => {
       router.replace('/(admin-stack)/nuevo-policia');
-    }, [router])
-  );
+    }, 50);
+    return () => clearTimeout(timer);
+  }, [router]);
 
-  return null;
+  return (
+    <View style={{ flex: 1, backgroundColor: '#174A1A', justifyContent: 'center', alignItems: 'center' }}>
+      <ActivityIndicator size="large" color="#FFD100" />
+    </View>
+  );
 }
+
 

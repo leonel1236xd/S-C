@@ -1,10 +1,11 @@
 import React from 'react';
-import { Tabs } from 'expo-router';
+import { Tabs, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function PoliciaLayout() {
   const insets = useSafeAreaInsets();
+  const router = useRouter();
 
   return (
     <Tabs
@@ -37,6 +38,12 @@ export default function PoliciaLayout() {
       />
       <Tabs.Screen
         name="registrar"
+        listeners={{
+          tabPress: (e) => {
+            e.preventDefault();
+            router.push('/(policia-stack)/nuevo-reporte');
+          },
+        }}
         options={{
           title: 'Registrar',
           tabBarIcon: ({ color, size }) => (
@@ -65,3 +72,4 @@ export default function PoliciaLayout() {
     </Tabs>
   );
 }
+
