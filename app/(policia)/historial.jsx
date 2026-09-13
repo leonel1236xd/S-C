@@ -40,15 +40,15 @@ export default function HistorialPolicia() {
     }
   }
 
-  function obtenerMiniatura(reporte) {
+  const obtenerMiniatura = useCallback((reporte) => {
     if (!reporte.evidencias || reporte.evidencias.length === 0) return null;
     const evidencia1 = reporte.evidencias.find((e) => e.orden === 1) || reporte.evidencias[0];
     return obtenerUrlPublica(evidencia1.ruta_archivo);
-  }
+  }, []);
 
-  function esModificado(reporte) {
+  const esModificado = useCallback((reporte) => {
     return new Date(reporte.updated_at).getTime() > new Date(reporte.created_at).getTime() + 1000;
-  }
+  }, []);
 
   return (
     <View className="flex-1 bg-fondo">

@@ -41,15 +41,19 @@ export function AuthProvider({ children }) {
     }
   }, [usuario]);
 
+  // Ref intermedia para que PanResponder siempre llame a la versión más reciente
+  const reiniciarRef = useRef(reiniciarTemporizador);
+  reiniciarRef.current = reiniciarTemporizador;
+
   // Escuchar toques en cualquier parte de la pantalla
   const panResponder = useRef(
     PanResponder.create({
       onStartShouldSetPanResponderCapture: () => {
-        reiniciarTemporizador();
+        reiniciarRef.current();
         return false;
       },
       onMoveShouldSetPanResponderCapture: () => {
-        reiniciarTemporizador();
+        reiniciarRef.current();
         return false;
       },
       onPanResponderTerminationRequest: () => true,

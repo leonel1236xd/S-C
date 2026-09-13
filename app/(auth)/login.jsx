@@ -1,8 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { useRef, useState } from 'react';
-import { Animated, Image, KeyboardAvoidingView, Platform, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Animated, { useSharedValue, useAnimatedStyle, withTiming } from 'react-native-reanimated';
 import BotonPrimario from '../../src/components/BotonPrimario';
 import { useAuth } from '../../src/context/AuthContext';
 
@@ -19,19 +21,19 @@ export default function LoginScreen() {
   const [focusCorreo, setFocusCorreo] = useState(false);
   const [focusPassword, setFocusPassword] = useState(false);
 
-  const translateY = useRef(new Animated.Value(0)).current;
+  const translateY = useSharedValue(0);
   const isFocusedRef = useRef(false);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: translateY.value }],
+  }));
 
   const handleFocus = (tipo) => {
     if (tipo === 'correo') setFocusCorreo(true);
     if (tipo === 'password') setFocusPassword(true);
 
     isFocusedRef.current = true;
-    Animated.timing(translateY, {
-      toValue: -70,
-      duration: 250,
-      useNativeDriver: true,
-    }).start();
+    translateY.value = withTiming(-70, { duration: 250 });
   };
 
   const handleBlur = (tipo) => {
@@ -41,11 +43,7 @@ export default function LoginScreen() {
     isFocusedRef.current = false;
     setTimeout(() => {
       if (!isFocusedRef.current) {
-        Animated.timing(translateY, {
-          toValue: 0,
-          duration: 250,
-          useNativeDriver: true,
-        }).start();
+        translateY.value = withTiming(0, { duration: 250 });
       }
     }, 50);
   };
@@ -110,13 +108,13 @@ export default function LoginScreen() {
         >
           <Animated.View
             className="px-8 items-center w-full"
-            style={{ transform: [{ translateY }] }}
+            style={animatedStyle}
           >
             {/* Logo */}
             <Image
-              source={require('../../assets/escudo-policia-boliviana.png')}
-              className="w-48 h-48"
-              resizeMode="contain"
+              source={require('../../assets/escudo_bolivia.png')}
+              style={{ width: 224, height: 224 }}
+              contentFit="contain"
             />
 
             {/* Separador */}

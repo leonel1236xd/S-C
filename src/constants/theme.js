@@ -77,3 +77,36 @@ export const NACIONALIDADES = [
   'Venezolano',
   'Otro',
 ];
+
+/**
+ * Obtener un ícono de Ionicons claro e identificativo según el tipo de incidente/delito.
+ * @param {string} tipo
+ * @returns {string} Nombre del icono en Ionicons
+ */
+export function obtenerIconoIncidente(tipo) {
+  if (!tipo) return 'shield-outline';
+  const t = tipo.toLowerCase().trim();
+
+  if (t.includes('robo agravado')) return 'flash';
+  if (t.includes('robo') || t.includes('hurto')) return 'warning';
+  if (t.includes('asalto')) return 'hand-left';
+  if (t.includes('asesinato') || t.includes('homicidio')) return 'skull';
+  if (t.includes('violencia') || t.includes('agresion')) return 'fitness';
+  if (t.includes('disturbio')) return 'megaphone';
+  if (t.includes('accidente') || t.includes('choque')) return 'car';
+  if (t.includes('narcotrafico') || t.includes('droga')) return 'flask';
+  if (t.includes('extorsion') || t.includes('chantaje')) return 'cash';
+  if (t.includes('secuestro')) return 'lock-closed';
+  if (t.includes('estafa') || t.includes('fraude')) return 'card';
+  if (t.includes('vandalismo') || t.includes('daño')) return 'hammer';
+
+  const encontrado = INCIDENTES_CON_ICONOS.find(
+    (item) => item.nombre.toLowerCase() === t
+  );
+  if (encontrado) {
+    return encontrado.icono.replace('-outline', '');
+  }
+
+  return 'document-text';
+}
+

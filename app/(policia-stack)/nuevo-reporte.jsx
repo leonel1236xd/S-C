@@ -1,20 +1,21 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { View, ScrollView, Text, Alert, KeyboardAvoidingView, Platform, TouchableOpacity, BackHandler } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter, useLocalSearchParams, useNavigation, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useAuth } from '../../src/context/AuthContext';
+import { useFocusEffect, useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Alert, BackHandler, KeyboardAvoidingView, Modal, Platform, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import BotonPrimario from '../../src/components/BotonPrimario';
+import EvidenciaPicker from '../../src/components/EvidenciaPicker';
+import FormDatePicker from '../../src/components/FormDatePicker';
 import FormInput from '../../src/components/FormInput';
 import FormSelect from '../../src/components/FormSelect';
-import FormDatePicker from '../../src/components/FormDatePicker';
 import FormTimePicker from '../../src/components/FormTimePicker';
-import EvidenciaPicker from '../../src/components/EvidenciaPicker';
-import BotonPrimario from '../../src/components/BotonPrimario';
 import LoadingSpinner from '../../src/components/LoadingSpinner';
 import ModalReporteActualizado from '../../src/components/ModalReporteActualizado';
-import { TIPOS_INCIDENTE, NACIONALIDADES } from '../../src/constants/theme';
-import { crearReporte, actualizarReporte, obtenerReportePorId } from '../../src/services/reportes';
-import { subirEvidencia, obtenerUrlPublica } from '../../src/services/evidencias';
+import { NACIONALIDADES, TIPOS_INCIDENTE } from '../../src/constants/theme';
+import { useAuth } from '../../src/context/AuthContext';
+import { eliminarEvidencia, obtenerUrlPublica, subirEvidencia } from '../../src/services/evidencias';
+import { actualizarReporte, crearReporte, obtenerReportePorId } from '../../src/services/reportes';
+import { supabase } from '../../src/services/supabaseClient';
 
 export default function NuevoReporte() {
   const insets = useSafeAreaInsets();
@@ -28,6 +29,8 @@ export default function NuevoReporte() {
 
   const [modalExitoVisible, setModalExitoVisible] = useState(false);
   const [datosActualizado, setDatosActualizado] = useState(null);
+  const [evidenciasAEliminar, setEvidenciasAEliminar] = useState([]);
+  const [modalAlmacenamientoVisible, setModalAlmacenamientoVisible] = useState(false);
 
   // Manejar el botón físico de retroceso (Android) para que vuelva a Inicio y no se salga de la app
   useFocusEffect(
@@ -185,7 +188,6 @@ export default function NuevoReporte() {
     if (!tipoIncidente) e.tipoIncidente = 'Requerido';
     if (!fechaIncidente) e.fechaIncidente = 'Requerido';
     if (!horaIncidente) e.horaIncidente = 'Requerido';
-    if (!modoEdicion && imagenes.length === 0) e.evidencias = 'Agregue al menos una evidencia';
     setErrores(e);
     return Object.keys(e).length === 0;
   }
@@ -216,13 +218,52 @@ export default function NuevoReporte() {
       let reporte;
       if (modoEdicion) {
         reporte = await actualizarReporte(idReporte, datos);
-        // Subir nuevas evidencias (las que no son existentes)
+
+        // 1. Obtener todas las evidencias registradas en BD para este reporte
+        const { data: evidenciasBD } = await supabase
+          .from('evidencias')
+          .select('id_evidencia, ruta_archivo')
+          .eq('id_reporte', idReporte);
+
+        // 2. Determinar cuáles de las evidencias de la BD ya no están en la lista actual 'imagenes'
+        if (evidenciasBD && evidenciasBD.length > 0) {
+          const idsAConservar = imagenes
+            .filter((img) => img.existente)
+            .map((img) => img.id_evidencia);
+
+          const evidenciasABorrar = evidenciasBD.filter(
+            (e) => !idsAConservar.includes(e.id_evidencia)
+          );
+
+          for (const ev of evidenciasABorrar) {
+            try {
+              await eliminarEvidencia(ev.id_evidencia, ev.ruta_archivo);
+            } catch (err) {
+              console.error('Error al eliminar evidencia obsoleta:', err);
+            }
+          }
+        }
+
+        // 3. Subir nuevas evidencias (las que no son existentes)
         const nuevas = imagenes.filter((img) => !img.existente);
         const existentes = imagenes.filter((img) => img.existente);
         let orden = existentes.length + 1;
+        let almacenamientoLlenoEdicion = false;
         for (const img of nuevas) {
-          await subirEvidencia(idReporte, img.uri, orden);
-          orden++;
+          try {
+            await subirEvidencia(idReporte, img.uri, orden);
+            orden++;
+          } catch (err) {
+            if (err.esAlmacenamientoLleno) {
+              almacenamientoLlenoEdicion = true;
+              break;
+            }
+            throw err;
+          }
+        }
+        if (almacenamientoLlenoEdicion) {
+          setModalAlmacenamientoVisible(true);
+          return;
         }
         setDatosActualizado({
           nombres: nombres.trim(),
@@ -233,15 +274,24 @@ export default function NuevoReporte() {
       } else {
         reporte = await crearReporte(datos);
         // Subir evidencias
+        let almacenamientoLleno = false;
         for (let i = 0; i < imagenes.length; i++) {
           try {
             await subirEvidencia(reporte.id_reporte, imagenes[i].uri, i + 1);
           } catch (err) {
+            if (err.esAlmacenamientoLleno) {
+              almacenamientoLleno = true;
+              break;
+            }
             Alert.alert(
               'Error parcial',
               `La imagen ${i + 1} no se pudo subir: ${err.message}. El reporte fue creado pero revisa las evidencias.`
             );
           }
+        }
+        if (almacenamientoLleno) {
+          setModalAlmacenamientoVisible(true);
+          return;
         }
         router.replace({
           pathname: '/(policia-stack)/reporte-registrado',
@@ -355,6 +405,7 @@ export default function NuevoReporte() {
               }}
               keyboardType="numeric"
               error={errores.edad}
+              maxLength={3}
             />
           </View>
         </View>
@@ -449,17 +500,17 @@ export default function NuevoReporte() {
             onAgregar={(img) => {
               const nuevas = [...imagenes, img];
               setImagenes(nuevas);
-              if (nuevas.length > 0) limpiarError('evidencias');
             }}
             onEliminar={(index) => {
+              const imgAEliminar = imagenes[index];
+              if (imgAEliminar?.existente) {
+                setEvidenciasAEliminar((prev) => [...prev, imgAEliminar]);
+              }
               const nuevas = [...imagenes];
               nuevas.splice(index, 1);
               setImagenes(nuevas);
             }}
           />
-          {errores.evidencias && (
-            <Text className="text-xs text-red-500 mt-1">{errores.evidencias}</Text>
-          )}
         </View>
 
         {/* Botón enviar */}
@@ -479,6 +530,60 @@ export default function NuevoReporte() {
           router.back();
         }}
       />
+
+      {/* Modal informativo: almacenamiento lleno */}
+      <Modal
+        visible={modalAlmacenamientoVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setModalAlmacenamientoVisible(false)}
+      >
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center', paddingHorizontal: 24 }}>
+          <View style={{ backgroundColor: '#FFFFFF', borderRadius: 20, padding: 28, width: '100%', maxWidth: 360, alignItems: 'center' }}>
+            {/* Icono */}
+            <View style={{ backgroundColor: '#FFF3E0', borderRadius: 50, width: 72, height: 72, justifyContent: 'center', alignItems: 'center', marginBottom: 16 }}>
+              <Ionicons name="cloud-offline-outline" size={36} color="#E65100" />
+            </View>
+
+            {/* Título */}
+            <Text style={{ fontSize: 18, fontWeight: '700', color: '#1A1A2E', textAlign: 'center', marginBottom: 8 }}>
+              Almacenamiento Lleno
+            </Text>
+
+            {/* Descripción */}
+            <Text style={{ fontSize: 14, color: '#666', textAlign: 'center', lineHeight: 20, marginBottom: 6 }}>
+              No se pueden subir más evidencias porque el almacenamiento de imágenes ha alcanzado su capacidad máxima.
+            </Text>
+            <Text style={{ fontSize: 14, color: '#666', textAlign: 'center', lineHeight: 20, marginBottom: 24 }}>
+              El reporte fue registrado correctamente. Podrás seguir registrando reportes sin evidencias visuales.
+            </Text>
+
+            {/* Botón */}
+            <TouchableOpacity
+              onPress={() => {
+                setModalAlmacenamientoVisible(false);
+                if (modoEdicion) {
+                  router.back();
+                } else {
+                  router.replace('/(policia)');
+                }
+              }}
+              style={{
+                backgroundColor: '#1A5632',
+                borderRadius: 12,
+                paddingVertical: 14,
+                paddingHorizontal: 32,
+                width: '100%',
+                alignItems: 'center',
+              }}
+            >
+              <Text style={{ color: '#FFFFFF', fontSize: 16, fontWeight: '600' }}>
+                Entendido
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </KeyboardAvoidingView>
   );
 }

@@ -1,4 +1,4 @@
-import React from 'react';
+import { memo } from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import AvatarUsuario from './AvatarUsuario';
@@ -12,7 +12,7 @@ import AvatarUsuario from './AvatarUsuario';
  * @param {Function} props.onDesactivar - Callback al presionar desactivar/activar
  * @param {boolean} props.esInactivo - Si el policía está en la pestaña de inactivos
  */
-export default function PoliciaTarjeta({ policia, onEditar, onDesactivar, esInactivo = false }) {
+function PoliciaTarjeta({ policia, onEditar, onDesactivar, esInactivo = false }) {
   return (
     <View className="bg-white rounded-xl border-l-4 border-verde-institucional mx-4 mb-3 p-4 flex-row items-center">
       {/* Avatar */}
@@ -63,3 +63,5 @@ export default function PoliciaTarjeta({ policia, onEditar, onDesactivar, esInac
     </View>
   );
 }
+
+export default memo(PoliciaTarjeta);

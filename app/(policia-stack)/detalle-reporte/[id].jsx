@@ -1,27 +1,34 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, BackHandler } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
-import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
-import LoadingSpinner from '../../../src/components/LoadingSpinner';
+import { Image } from 'expo-image';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
+import { useCallback, useState } from 'react';
+import { BackHandler, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AvatarUsuario from '../../../src/components/AvatarUsuario';
+import LoadingSpinner from '../../../src/components/LoadingSpinner';
 import ZoomableImageModal from '../../../src/components/ZoomableImageModal';
-import { obtenerReportePorId } from '../../../src/services/reportes';
+import { obtenerIconoIncidente } from '../../../src/constants/theme';
+import { useAuth } from '../../../src/context/AuthContext';
 import { obtenerUrlPublica } from '../../../src/services/evidencias';
+import { obtenerReportePorId } from '../../../src/services/reportes';
 
 export default function DetalleReporte() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { usuario } = useAuth();
   const { id } = useLocalSearchParams();
   const [reporte, setReporte] = useState(null);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState(null);
   const [imagenModalUrl, setImagenModalUrl] = useState(null);
 
-  // Manejar botón físico de atrás (Android)
+  // Manejar botón físico de atrás (Android) y refrescar datos al enfocar la pantalla
   useFocusEffect(
     useCallback(() => {
+      if (id) {
+        cargar(!!reporte);
+      }
+
       const onBackPress = () => {
         if (router.canGoBack()) {
           router.back();
@@ -33,22 +40,18 @@ export default function DetalleReporte() {
 
       const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
       return () => subscription.remove();
-    }, [router])
+    }, [id, router])
   );
 
-  useEffect(() => {
-    cargar();
-  }, [id]);
-
-  async function cargar() {
+  async function cargar(silencioso = false) {
     try {
-      setCargando(true);
+      if (!silencioso) setCargando(true);
       const data = await obtenerReportePorId(id);
       setReporte(data);
     } catch (err) {
-      setError(err.message);
+      if (!silencioso) setError(err.message);
     } finally {
-      setCargando(false);
+      if (!silencioso) setCargando(false);
     }
   }
 
@@ -83,6 +86,7 @@ export default function DetalleReporte() {
 
   const evidencias = (reporte.evidencias || []).sort((a, b) => a.orden - b.orden);
   const policia = reporte.usuarios;
+  const iconoDelito = obtenerIconoIncidente(reporte.tipo_incidente);
 
   return (
     <View className="flex-1 bg-fondo">
@@ -130,7 +134,7 @@ export default function DetalleReporte() {
           {reporte.descripcion_incidente && (
             <View className="mt-2">
               <Text className="text-xs text-gris">Descripción</Text>
-              <Text className="text-sm text-negro">{reporte.descripcion_incidente}</Text>
+              <Text className="text-sm font-bold text-negro">{reporte.descripcion_incidente}</Text>
             </View>
           )}
         </View>
@@ -140,7 +144,7 @@ export default function DetalleReporte() {
           <View className="flex-row items-center mb-3">
             <Ionicons name="person" size={20} color="#174A1A" />
             <Text className="text-verde-institucional text-base font-bold ml-2">
-              Información del incidente
+              Información del acusado
             </Text>
           </View>
 
@@ -158,8 +162,8 @@ export default function DetalleReporte() {
           </View>
         </View>
 
-        {/* Evidencia visual */}
-        {evidencias.length > 0 && (
+        {/* Evidencia visual o Ícono según tipo de delito */}
+        {evidencias.length > 0 ? (
           <View className="bg-white rounded-xl p-4 mb-4 border border-verde-institucional/10">
             <View className="flex-row items-center mb-3">
               <Ionicons name="images" size={20} color="#174A1A" />
@@ -188,29 +192,48 @@ export default function DetalleReporte() {
               })}
             </View>
           </View>
-        )}
-
-        {/* Policía que registró */}
-        {policia && (
+        ) : (
           <View className="bg-white rounded-xl p-4 mb-4 border border-verde-institucional/10 flex-row items-center">
-            <AvatarUsuario tamaño={48} />
-            <View className="ml-3">
-              <Text className="text-xs text-gris">{policia.tipo_policia || 'Policía'}</Text>
+            <View
+              className="w-14 h-14 rounded-xl bg-verde-claro items-center justify-center mr-3"
+              style={{ borderWidth: 1, borderColor: 'rgba(23,74,26,0.2)' }}
+            >
+              <Ionicons name={iconoDelito} size={30} color="#174A1A" />
+            </View>
+            <View className="flex-1">
+              <Text className="text-xs text-gris font-semibold">Sin evidencia visual</Text>
               <Text className="text-sm font-bold text-negro">
-                {policia.nombres} {policia.apellidos}
+                Registrado bajo tipo {reporte.tipo_incidente}
               </Text>
             </View>
           </View>
         )}
 
-        {/* Botón volver */}
-        <TouchableOpacity
-          onPress={() => router.back()}
-          className="bg-amarillo rounded-xl py-4 flex-row items-center justify-center mt-2"
-        >
-          <Ionicons name="arrow-back" size={20} color="#162A0F" />
-          <Text className="text-verde-fuerte text-base font-bold ml-2">Volver</Text>
-        </TouchableOpacity>
+        {/* Policía que registró */}
+        <View className="bg-white rounded-xl p-4 mb-4 border border-verde-institucional/10 flex-row items-center">
+          <AvatarUsuario tamaño={48} />
+          <View className="ml-3 flex-1">
+            <Text className="text-xs text-gris font-semibold">Registrado por:</Text>
+            <Text className="text-sm font-bold text-verde-institucional mt-0.5">
+              {policia?.tipo_policia || 'Policía'}
+            </Text>
+            <Text className="text-base font-bold text-negro mt-0.5">
+              {policia ? `${policia.nombres || ''} ${policia.apellidos || ''}`.trim() : 'Oficial de Policía'}
+            </Text>
+          </View>
+        </View>
+
+        {/* Botón de acción Volver */}
+        <View className="mt-2">
+          <TouchableOpacity
+            onPress={() => router.back()}
+            className="w-full bg-amarillo rounded-xl py-4 flex-row items-center justify-center shadow-sm"
+            activeOpacity={0.8}
+          >
+            <Ionicons name="arrow-back" size={20} color="#000000" />
+            <Text className="text-negro text-base font-bold ml-2">Volver</Text>
+          </TouchableOpacity>
+        </View>
       </ScrollView>
 
       {/* Modal de Imagen Ampliada con Zoom y Gestos (Pinch-to-Zoom) */}

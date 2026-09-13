@@ -4,7 +4,7 @@
     "slug": "SafeCity",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/icono.png",
     "scheme": "safecity",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
@@ -14,15 +14,10 @@
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#174A1A",
-        "foregroundImage": "./assets/images/android-icon-foreground.png",
-        "backgroundImage": "./assets/images/android-icon-background.png",
-        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+        "foregroundImage": "./assets/icono.png"
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "permissions": [
-        "android.permission.RECORD_AUDIO"
-      ],
       "package": "com.pelucas.safecity"
     },
     "web": {
@@ -42,7 +37,7 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/splash-icon.png",
+          "image": "./assets/pantalla_de_carga.png",
           "imageWidth": 200,
           "resizeMode": "contain",
           "backgroundColor": "#174A1A"

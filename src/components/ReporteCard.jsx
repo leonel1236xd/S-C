@@ -1,7 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
-import { useState } from 'react';
+import { memo, useState } from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
+import { obtenerIconoIncidente } from '../constants/theme';
 
 /**
  * Tarjeta de reporte para el feed de inicio.
@@ -12,14 +13,14 @@ import { Text, TouchableOpacity, View } from 'react-native';
  * @param {string} props.urlMiniatura - URL pública de la evidencia con orden=1
  * @param {Function} props.onVerDetalles - Callback al presionar "Ver detalles"
  */
-export default function ReporteCard({ reporte, urlMiniatura, onVerDetalles }) {
+function ReporteCard({ reporte, urlMiniatura, onVerDetalles }) {
   const [errorImagen, setErrorImagen] = useState(false);
 
   // Calcular tiempo relativo
   const tiempoRelativo = calcularTiempoRelativo(reporte.created_at);
 
   // Determinar ícono según tipo de incidente
-  const icono = obtenerIcono(reporte.tipo_incidente);
+  const icono = obtenerIconoIncidente(reporte.tipo_incidente);
 
   // Determinar si mostrar la imagen real o el ícono de fallback
   const mostrarImagen = urlMiniatura && !errorImagen;
@@ -100,6 +101,8 @@ export default function ReporteCard({ reporte, urlMiniatura, onVerDetalles }) {
   );
 }
 
+export default memo(ReporteCard);
+
 function calcularTiempoRelativo(fecha) {
   if (!fecha) return '';
   const ahora = new Date();
@@ -132,13 +135,3 @@ function formatearFecha(fecha) {
   const anio = d.getFullYear();
   return `${dia}/${mes}/${anio}`;
 }
-
-function obtenerIcono(tipo) {
-  const tipoLower = (tipo || '').toLowerCase();
-  if (tipoLower.includes('robo') || tipoLower.includes('hurto') || tipoLower.includes('asalto')) return 'warning';
-  if (tipoLower.includes('accidente')) return 'car-outline';
-  if (tipoLower.includes('asesinato') || tipoLower.includes('homicidio')) return 'alert-circle';
-  if (tipoLower.includes('violencia')) return 'hand-left-outline';
-  return 'document-text-outline';
-}
-

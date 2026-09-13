@@ -6,7 +6,7 @@ import { supabase } from './supabaseClient';
 export async function obtenerReportes({ busqueda, tiposIncidentes = [], limite = 10, desde = 0 } = {}) {
   let query = supabase
     .from('reportes')
-    .select('*, evidencias(id_evidencia, ruta_archivo, orden), usuarios(nombres, apellidos, tipo_policia)')
+    .select('*, evidencias(id_evidencia, ruta_archivo, orden), usuarios!id_usuario(nombres, apellidos, tipo_policia)')
     .order('created_at', { ascending: false })
     .range(desde, desde + limite - 1);
 
@@ -31,7 +31,7 @@ export async function obtenerReportes({ busqueda, tiposIncidentes = [], limite =
 export async function obtenerReportesPropios({ idUsuario, busqueda, tiposIncidentes = [], limite = 10, desde = 0 } = {}) {
   let query = supabase
     .from('reportes')
-    .select('*, evidencias(id_evidencia, ruta_archivo, orden), usuarios(nombres, apellidos, tipo_policia)')
+    .select('*, evidencias(id_evidencia, ruta_archivo, orden), usuarios!id_usuario(nombres, apellidos, tipo_policia)')
     .eq('id_usuario', idUsuario)
     .order('created_at', { ascending: false })
     .range(desde, desde + limite - 1);
@@ -57,7 +57,7 @@ export async function obtenerReportesPropios({ idUsuario, busqueda, tiposInciden
 export async function obtenerReportePorId(idReporte) {
   const { data, error } = await supabase
     .from('reportes')
-    .select('*, evidencias(id_evidencia, ruta_archivo, orden), usuarios(nombres, apellidos, tipo_policia)')
+    .select('*, evidencias(id_evidencia, ruta_archivo, orden), usuarios!id_usuario(nombres, apellidos, tipo_policia)')
     .eq('id_reporte', idReporte)
     .single();
 

@@ -1,5 +1,5 @@
 import { useFocusEffect, useRouter, useLocalSearchParams } from 'expo-router';
-import { useCallback, useState, useEffect } from 'react';
+import { useCallback, useMemo, useState, useEffect } from 'react';
 import { FlatList, Text, View } from 'react-native';
 import BuscadorInput from '../../src/components/BuscadorInput';
 import FiltroChips from '../../src/components/FiltroChips';
@@ -77,7 +77,7 @@ export default function InicioPolicia() {
     if (valor) setBusqueda('');
   }
 
-  const filtrosDinamicos = FILTROS_BASE.map((f) => {
+  const filtrosDinamicos = useMemo(() => FILTROS_BASE.map((f) => {
     if (f.valor === 'OTROS') {
       return {
         ...f,
@@ -87,13 +87,13 @@ export default function InicioPolicia() {
       };
     }
     return f;
-  });
+  }), [incidentesSeleccionados.length]);
 
-  function obtenerMiniatura(reporte) {
+  const obtenerMiniatura = useCallback((reporte) => {
     if (!reporte.evidencias || reporte.evidencias.length === 0) return null;
     const evidencia1 = reporte.evidencias.find((e) => e.orden === 1) || reporte.evidencias[0];
     return obtenerUrlPublica(evidencia1.ruta_archivo);
-  }
+  }, []);
 
   return (
     <View className="flex-1 bg-fondo">

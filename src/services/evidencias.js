@@ -16,7 +16,8 @@ export async function subirEvidencia(idReporte, uri, orden) {
   // Convertir blob a ArrayBuffer para Supabase Storage
   const arrayBuffer = await new Response(blob).arrayBuffer();
 
-  const rutaArchivo = `${idReporte}/${orden}.jpg`;
+  const timestamp = Date.now();
+  const rutaArchivo = `${idReporte}/ev_${orden}_${timestamp}.jpg`;
 
   // 3. Subir a Storage
   const { error: errorStorage } = await supabase.storage
@@ -26,7 +27,25 @@ export async function subirEvidencia(idReporte, uri, orden) {
       upsert: true,
     });
 
-  if (errorStorage) throw new Error(`Error al subir imagen: ${errorStorage.message}`);
+  if (errorStorage) {
+    // Detectar si el error es por almacenamiento lleno
+    const msg = errorStorage.message || '';
+    const esAlmacenamientoLleno =
+      errorStorage.statusCode === 413 ||
+      msg.includes('storage limit') ||
+      msg.includes('quota') ||
+      msg.includes('exceeded') ||
+      msg.includes('payload too large') ||
+      msg.includes('insufficient') ||
+      msg.includes('space');
+
+    if (esAlmacenamientoLleno) {
+      const err = new Error('ALMACENAMIENTO_LLENO');
+      err.esAlmacenamientoLleno = true;
+      throw err;
+    }
+    throw new Error(`Error al subir imagen: ${errorStorage.message}`);
+  }
 
   // 4. Insertar registro en tabla evidencias
   const { data, error: errorInsert } = await supabase
@@ -52,16 +71,29 @@ export async function subirEvidencia(idReporte, uri, orden) {
  * Eliminar una evidencia (imagen de Storage + registro de tabla).
  */
 export async function eliminarEvidencia(idEvidencia, rutaArchivo) {
-  // Eliminar de Storage
-  await supabase.storage.from('evidencias-reportes').remove([rutaArchivo]);
+  // 1. Eliminar registro de la tabla evidencias
+  if (idEvidencia) {
+    const { error: errorTabla } = await supabase
+      .from('evidencias')
+      .delete()
+      .eq('id_evidencia', idEvidencia);
 
-  // Eliminar registro de la tabla
-  const { error } = await supabase
-    .from('evidencias')
-    .delete()
-    .eq('id_evidencia', idEvidencia);
+    if (errorTabla) {
+      console.error('Error al borrar evidencia de la tabla:', errorTabla.message);
+      throw new Error(`Error al borrar registro de evidencia: ${errorTabla.message}`);
+    }
+  }
 
-  if (error) throw new Error(error.message);
+  // 2. Eliminar de Storage
+  if (rutaArchivo) {
+    const { error: errorStorage } = await supabase.storage
+      .from('evidencias-reportes')
+      .remove([rutaArchivo]);
+
+    if (errorStorage) {
+      console.warn('Error al borrar evidencia de Storage:', errorStorage.message);
+    }
+  }
 }
 
 /**

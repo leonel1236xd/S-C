@@ -1,8 +1,7 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, Alert } from 'react-native';
-import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
+import { Alert, Text, TouchableOpacity, View } from 'react-native';
 
 /**
  * Selector de hasta 3 imágenes de evidencia con preview.
@@ -63,20 +62,34 @@ export default function EvidenciaPicker({ imagenes = [], onAgregar, onEliminar }
   return (
     <View>
       <Text className="text-sm font-semibold text-negro mb-2">
-        Evidencia visual <Text className="text-red-500">*</Text>
+        Evidencia visual
       </Text>
       <View className="flex-row flex-wrap gap-3">
         {imagenes.map((img, index) => (
-          <View key={index} style={{ width: 96, height: 96, position: 'relative' }}>
+          <View
+            key={index}
+            style={{ width: 96, height: 96, position: 'relative' }}
+          >
             <Image
               source={{ uri: img.uri }}
-              style={{ width: 96, height: 96, borderRadius: 12 }}
+              style={{ width: 96, height: 96, borderRadius: 8 }}
               contentFit="cover"
             />
             <TouchableOpacity
               onPress={() => onEliminar(index)}
-              className="absolute -top-2 -right-2 bg-red-500 rounded-full w-6 h-6 items-center justify-center shadow-sm"
-              style={{ zIndex: 10 }}
+              style={{
+                position: 'absolute',
+                top: -6,
+                right: -6,
+                backgroundColor: '#EF4444',
+                borderRadius: 12,
+                width: 24,
+                height: 24,
+                alignItems: 'center',
+                justifyContent: 'center',
+                zIndex: 10,
+                elevation: 3,
+              }}
             >
               <Ionicons name="close" size={14} color="#FFFFFF" />
             </TouchableOpacity>
@@ -86,18 +99,25 @@ export default function EvidenciaPicker({ imagenes = [], onAgregar, onEliminar }
         {puedeAgregar && (
           <TouchableOpacity
             onPress={seleccionarImagen}
-            style={{ width: 96, height: 96 }}
-            className="rounded-xl border-2 border-dashed border-verde-institucional/50 items-center justify-center bg-verde-claro/30"
+            style={{
+              width: 96,
+              height: 96,
+              borderRadius: 8,
+              borderWidth: 2,
+              borderStyle: 'dashed',
+              borderColor: 'rgba(23,74,26,0.5)',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
           >
             <Ionicons name="cloud-upload-outline" size={28} color="#174A1A" />
-            <Text className="text-xs text-verde-institucional font-medium mt-1">Agregar</Text>
+            <Text className="text-xs text-verde-institucional mt-1">Agregar</Text>
           </TouchableOpacity>
         )}
       </View>
-      <Text className="text-xs text-gris mt-1.5">
-        {imagenes.length}/3 imágenes adjuntas (Máximo 3)
+      <Text className="text-sm font-normal text-negro mt-3">
+        {`${imagenes.length}/3 imágenes adjuntas (Máximo 3)`}
       </Text>
     </View>
   );
 }
-

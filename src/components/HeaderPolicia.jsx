@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, Image } from 'react-native';
+import { Image } from 'expo-image';
+import { View, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function HeaderPolicia() {
@@ -11,9 +11,9 @@ export default function HeaderPolicia() {
       style={{ paddingTop: insets.top + 8 }}
     >
       <Image
-        source={require('../../assets/escudo-policia-boliviana.png')}
-        className="w-14 h-14"
-        resizeMode="contain"
+        source={require('../../assets/escudo_bolivia.png')}
+        style={{ width: 56, height: 56 }}
+        contentFit="contain"
       />
       <Text className="text-white text-xl font-bold ml-3">
         Policía Boliviana
@@ -21,4 +21,3 @@ export default function HeaderPolicia() {
     </View>
   );
 }
-

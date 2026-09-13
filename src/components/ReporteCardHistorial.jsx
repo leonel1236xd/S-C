@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
+import { memo, useState } from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
+import { obtenerIconoIncidente } from '../constants/theme';
 
 /**
  * Tarjeta de reporte para el historial propio.
@@ -14,10 +15,10 @@ import { Text, TouchableOpacity, View } from 'react-native';
  * @param {Function} props.onModificar - Callback al presionar "Modificar"
  * @param {Function} props.onVerDetalles - Callback al presionar la tarjeta
  */
-export default function ReporteCardHistorial({ reporte, urlMiniatura, modificado, onModificar, onVerDetalles }) {
+function ReporteCardHistorial({ reporte, urlMiniatura, modificado, onModificar, onVerDetalles }) {
   const [errorImagen, setErrorImagen] = useState(false);
 
-  const icono = obtenerIcono(reporte.tipo_incidente);
+  const icono = obtenerIconoIncidente(reporte.tipo_incidente);
   const mostrarImagen = urlMiniatura && !errorImagen;
 
   return (
@@ -67,34 +68,37 @@ export default function ReporteCardHistorial({ reporte, urlMiniatura, modificado
 
       {/* Fecha y acción */}
       <View className="items-end ml-2">
-        <View className="flex-row items-center mb-2">
+        <View className="flex-row items-center mb-1.5">
           <Ionicons name="calendar-outline" size={14} color="#6B7280" />
           <Text className="text-xs text-gris ml-1">
             {formatearFechaCorta(reporte.fecha_incidente)}
           </Text>
         </View>
 
-        {modificado ? (
-          <View className="flex-row items-center bg-verde-claro rounded-lg px-3 py-2">
-            <Ionicons name="checkmark" size={14} color="#174A1A" />
-            <Text className="text-xs text-verde-institucional ml-1 font-medium">Modificado</Text>
+        {modificado && (
+          <View className="flex-row items-center bg-verde-claro rounded-md px-2 py-0.5 mb-1.5 self-end">
+            <Ionicons name="checkmark-circle-outline" size={12} color="#174A1A" />
+            <Text className="text-[10px] text-verde-institucional ml-1 font-semibold">Modificado</Text>
           </View>
-        ) : (
-          <TouchableOpacity
-            onPress={(e) => {
-              e.stopPropagation?.();
-              onModificar?.();
-            }}
-            className="border border-verde-institucional rounded-lg px-3 py-2 flex-row items-center"
-          >
-            <Ionicons name="create-outline" size={14} color="#174A1A" />
-            <Text className="text-xs text-verde-institucional ml-1 font-medium">Modificar</Text>
-          </TouchableOpacity>
         )}
+
+        <TouchableOpacity
+          onPress={(e) => {
+            e.stopPropagation?.();
+            onModificar?.();
+          }}
+          className="bg-white border border-verde-institucional rounded-lg px-3 py-1.5 flex-row items-center active:bg-verde-claro/20"
+          activeOpacity={0.7}
+        >
+          <Ionicons name="create-outline" size={14} color="#174A1A" />
+          <Text className="text-xs text-verde-institucional ml-1 font-medium">Modificar</Text>
+        </TouchableOpacity>
       </View>
     </TouchableOpacity>
   );
 }
+
+export default memo(ReporteCardHistorial);
 
 function formatearFechaCorta(fecha) {
   if (!fecha) return '';
@@ -117,12 +121,4 @@ function formatearFechaCorta(fecha) {
   return `${dia} ${meses[mesIndex]} ${anio}`;
 }
 
-function obtenerIcono(tipo) {
-  const tipoLower = (tipo || '').toLowerCase();
-  if (tipoLower.includes('robo') || tipoLower.includes('hurto') || tipoLower.includes('asalto')) return 'warning-outline';
-  if (tipoLower.includes('accidente')) return 'car-outline';
-  if (tipoLower.includes('asesinato') || tipoLower.includes('homicidio')) return 'alert-circle-outline';
-  if (tipoLower.includes('violencia')) return 'hand-left-outline';
-  return 'document-text-outline';
-}
 
