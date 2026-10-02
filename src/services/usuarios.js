@@ -86,26 +86,18 @@ export async function activarPolicia(idUsuario) {
  * lo envuelve en un FunctionsHttpError genérico. Hay que leer el body real.
  */
 export async function crearPolicia({ nombres, apellidos, correo, password, tipo_policia }) {
-  const { data, error } = await supabase.functions.invoke('crear-policia', {
-    body: { nombres, apellidos, correo, password, tipo_policia },
+  const { data, error } = await supabase.rpc('crear_policia', {
+    p_nombres: nombres,
+    p_apellidos: apellidos,
+    p_correo: correo,
+    p_password: password,
+    p_tipo_policia: tipo_policia || null,
   });
 
   if (error) {
-    // Intentar extraer el mensaje real del body de la respuesta
-    let mensajeError = error.message;
-    try {
-      // FunctionsHttpError tiene la respuesta en error.context
-      if (error.context && typeof error.context.json === 'function') {
-        const body = await error.context.json();
-        if (body?.error) mensajeError = body.error;
-      }
-    } catch {
-      // Si no se puede leer el body, usar el mensaje genérico
-    }
-    throw new Error(mensajeError);
+    throw new Error(error.message);
   }
 
-  if (data?.error) throw new Error(data.error);
-  return data;
+  return { usuario: data };
 }
 
