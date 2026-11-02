@@ -1,12 +1,12 @@
-import React, { useEffect, memo } from 'react';
-import { View, Text, Modal } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { memo, useEffect } from 'react';
+import { Modal, Text, View } from 'react-native';
 import Animated, {
-  useSharedValue,
   useAnimatedStyle,
+  useSharedValue,
+  withDelay,
   withSpring,
   withTiming,
-  withDelay,
 } from 'react-native-reanimated';
 import BotonPrimario from './BotonPrimario';
 
@@ -72,7 +72,7 @@ function ModalReporteActualizado({ visible, datosReporte, onConfirmar }) {
             ¡REPORTE ACTUALIZADO!
           </Text>
           <Text className="text-xs text-gray-500 text-center mt-2 mb-6 px-2 leading-5">
-            Los cambios del reporte han sido guardados correctamente en SafeCity.
+            Los cambios del reporte han sido guardados correctamente.
           </Text>
 
           {/* Botón principal */}
